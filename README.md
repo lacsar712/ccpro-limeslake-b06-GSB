@@ -38,6 +38,17 @@
 
 规则实现：`app/services/rules.py`
 
+### 批次备注敏感词库
+
+- 顶栏「敏感词库」（`/sensitive-words/`）可增、删、启用、停用敏感词（`SensitiveWord`）
+- 批次备注命中任一**启用**词（子串匹配，大小写不敏感）即**整笔拒绝**：不新增批次、不改任何字段，无半插入
+- 两条写入链路同口径校验（`app/services/filter.py`）：
+  - 批次保存：`/batches/new`、`/batches/<id>/edit`
+  - 平面图抽屉：`/board/ponds/<id>/ops`
+- 备注相对原值**未改动**时不触发词库——出灰、改池态、登记峰值不受影响（含历史遗留的含词备注原样提交）
+- 两个备注输入框有与后端同词库的实时提示；前端只作提示，拦截以后端事务为准
+- 并发修改同一备注时，服务端先对批次行加 `FOR UPDATE` 锁、在锁内按库中最新备注判定：一笔命中、一笔合法时，只许合法那笔生效
+
 ## 快速启动
 
 ```bash
@@ -64,8 +75,9 @@ LimeSlake-01/
 ├── app/
 │   ├── __init__.py          # 工厂 + seed
 │   ├── models.py
-│   ├── services/rules.py
-│   └── blueprints/{auth,board,ponds,batches}
+│   ├── services/rules.py    # 出灰规则
+│   ├── services/filter.py   # 备注敏感词校验（两条写入链路共用）
+│   └── blueprints/{auth,board,ponds,batches,sensitive_words}
 ├── templates/
 │   └── board/floor.html     # 平面图 + 抽屉
 └── static/

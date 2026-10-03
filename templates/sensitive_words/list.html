@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}敏感词库{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>批次备注敏感词库</h1>
+    <p>备注命中任一<strong>启用</strong>词（子串匹配）即整笔拒绝，不会写入任何字段；停用词不拦截。出灰与改池态不备注时不受影响。</p>
+  </div>
+</header>
+
+<form class="panel" method="post" action="{{ url_for('sensitive_words.add_word') }}">
+  <label>新增敏感词
+    <input name="word" type="text" maxlength="120" required placeholder="例如：报废" />
+  </label>
+  <div class="actions">
+    <button type="submit">加入并启用</button>
+  </div>
+</form>
+
+<p class="hint">启用中 {{ enabled_count }} 个 / 共 {{ words|length }} 个</p>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>敏感词</th>
+      <th>状态</th>
+      <th>加入时间</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for word in words %}
+    <tr class="{% if not word.enabled %}row-disabled{% endif %}">
+      <td>{{ word.word }}</td>
+      <td>
+        {% if word.enabled %}
+        <span class="badge badge-on">启用中</span>
+        {% else %}
+        <span class="badge badge-off">已停用</span>
+        {% endif %}
+      </td>
+      <td>{{ word.created_at.strftime('%Y-%m-%d %H:%M') if word.created_at else '—' }}</td>
+      <td>
+        <form method="post" action="{{ url_for('sensitive_words.toggle_word', word_id=word.id) }}" style="display:inline">
+          <button type="submit" class="btn ghost btn-sm">{{ '停用' if word.enabled else '启用' }}</button>
+        </form>
+        <form method="post" action="{{ url_for('sensitive_words.delete_word', word_id=word.id) }}" style="display:inline"
+              onsubmit="return confirm('确认删除敏感词「{{ word.word }}」？');">
+          <button type="submit" class="btn ghost btn-sm btn-danger">删除</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">词库为空，先在上方加入敏感词。</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

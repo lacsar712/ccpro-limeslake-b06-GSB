@@ -425,3 +425,11 @@ button:hover, .btn:hover { background: #1e293b; }
   .floor-head { flex-direction: column; }
   .pond-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* 敏感词库与备注命中提示 */
+.badge-on { background: #ccfbf1; color: var(--ok); }
+.badge-off { background: #e2e8f0; color: var(--muted); }
+.row-disabled td { opacity: 0.55; }
+.btn-sm { padding: 4px 10px; font-size: 0.82rem; }
+.btn-danger { color: var(--danger); }
+.hint-danger { color: var(--danger); font-weight: 600; }

@@ -106,7 +106,9 @@
         class="ops-form"
         method="post"
         action="{{ url_for('board.pond_ops', pond_id=selected.id) }}"
-        data-controller="form-hint"
+        data-controller="form-hint sensitive-notes"
+        data-sensitive-notes-words-value='{{ sensitive_words|tojson }}'
+        data-sensitive-notes-original-value="{{ selected_batch.notes }}"
       >
         <label>登记 / 修正峰值温度 ℃
           <input
@@ -118,8 +120,9 @@
           />
         </label>
         <label>批次备注
-          <textarea name="batch_notes" rows="2">{{ selected_batch.notes }}</textarea>
+          <textarea name="batch_notes" rows="2" data-sensitive-notes-target="notes">{{ selected_batch.notes }}</textarea>
         </label>
+        <p class="hint" data-sensitive-notes-target="hint"></p>
         <label>池状态
           <select name="status" data-form-hint-target="status">
             {% for key, label in status_labels.items() %}

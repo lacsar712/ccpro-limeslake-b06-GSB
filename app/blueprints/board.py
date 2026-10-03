@@ -2,7 +2,8 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 
 from app.extensions import db
-from app.models import Plant, Pond
+from app.models import Plant, Pond, SlakeBatch
+from app.services.filter import SensitiveWordError, assert_notes_allowed
 from app.services.rules import RuleError, assert_can_set_pond_status, latest_batch_for_pond
 
 bp = Blueprint("board", __name__, url_prefix="/board")
@@ -74,20 +75,35 @@ def pond_ops(pond_id: int):
 
     if peak_raw:
         try:
-            batch.peak_temp_c = float(peak_raw)
+            float(peak_raw)
         except ValueError:
             flash("峰值温度格式无效", "error")
             return redirect(
                 url_for("board.floor_plan", plant_id=pond.plant_id, pond=pond.id)
             )
 
-    batch.notes = notes
-
     try:
+        # 行锁串行化并发备注修改：后到者必须基于已提交的最新备注判定，
+        # 故「一笔命中、一笔合法」并发时，命中者即使后提交仍会被拒。
+        locked = (
+            db.session.query(SlakeBatch)
+            .filter_by(id=batch.id)
+            .with_for_update()
+            .populate_existing()
+            .one()
+        )
+        # 备注未变更（出灰 / 改池态 / 仅登记峰值）时词库不介入
+        assert_notes_allowed(notes, locked.notes)
+        if peak_raw:
+            locked.peak_temp_c = float(peak_raw)
+        locked.notes = notes
         assert_can_set_pond_status(pond, status)
         pond.status = status
         db.session.commit()
         flash(f"{pond.code} 已更新", "ok")
+    except SensitiveWordError as exc:
+        db.session.rollback()
+        flash(str(exc), "error")
     except RuleError as exc:
         db.session.rollback()
         flash(str(exc), "error")
