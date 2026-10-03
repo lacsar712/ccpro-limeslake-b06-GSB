@@ -3,7 +3,13 @@ from flask_login import login_required
 
 from app.extensions import db
 from app.models import Plant, Pond
-from app.services.rules import RuleError, assert_can_set_pond_status, latest_batch_for_pond
+from app.services.rules import (
+    RuleError,
+    SensitiveWordError,
+    assert_can_set_pond_status,
+    assert_notes_allowed,
+    latest_batch_for_pond,
+)
 
 bp = Blueprint("board", __name__, url_prefix="/board")
 
@@ -65,17 +71,32 @@ def pond_ops(pond_id: int):
     peak_raw = (request.form.get("peak_temp_c") or "").strip()
     notes = (request.form.get("batch_notes") or "").strip()
 
-    batch = latest_batch_for_pond(pond)
+    # 行锁串行化同一条批次的并发提交，保证「一笔命中一笔合法」时只有合法那笔生效
+    batch = latest_batch_for_pond(pond, lock=True)
     if batch is None:
+        db.session.rollback()
         flash("该池尚无熟化批次，无法登记峰值或出灰", "error")
         return redirect(
             url_for("board.floor_plan", plant_id=pond.plant_id, pond=pond.id)
         )
 
+    notes_changed = notes != (batch.notes or "")
+    if notes_changed:
+        # 备注发生改动才过词库：只出灰 / 只改池态（表单回填原备注）不受影响
+        try:
+            assert_notes_allowed(notes)
+        except SensitiveWordError as exc:
+            db.session.rollback()
+            flash(str(exc), "error")
+            return redirect(
+                url_for("board.floor_plan", plant_id=pond.plant_id, pond=pond.id)
+            )
+
     if peak_raw:
         try:
             batch.peak_temp_c = float(peak_raw)
         except ValueError:
+            db.session.rollback()
             flash("峰值温度格式无效", "error")
             return redirect(
                 url_for("board.floor_plan", plant_id=pond.plant_id, pond=pond.id)

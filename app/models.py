@@ -75,3 +75,14 @@ class SlakeBatch(db.Model):
     notes = db.Column(db.Text, nullable=False, default="")
 
     pond = db.relationship("Pond", back_populates="batches")
+
+
+class SensitiveWord(db.Model):
+    """批次备注敏感词。启用词命中任一则该笔写入整体拒绝。"""
+
+    __tablename__ = "sensitive_words"
+
+    id = db.Column(db.Integer, primary_key=True)
+    word = db.Column(db.String(100), unique=True, nullable=False)
+    enabled = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime(timezone=True), default=utcnow)

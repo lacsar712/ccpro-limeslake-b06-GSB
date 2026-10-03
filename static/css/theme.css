@@ -420,6 +420,28 @@ button:hover, .btn:hover { background: #1e293b; }
 }
 .actions { display: flex; gap: 10px; align-items: center; }
 
+/* Sensitive word library */
+.word-add-form { margin-bottom: 14px; }
+.word-count { margin: 0 0 12px; }
+.word-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.word-on { background: var(--slake-bg); color: var(--slake-ink); }
+.word-off { background: var(--drawn-bg); color: var(--drawn-ink); }
+.word-row-disabled td { opacity: 0.55; }
+.word-ops { display: flex; gap: 8px; }
+.word-ops form { margin: 0; }
+.btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+button.btn.danger, .btn.danger {
+  background: var(--danger);
+  color: #fee2e2;
+}
+button.btn.danger:hover, .btn.danger:hover { background: #991b1b; }
+
 @media (max-width: 720px) {
   .topbar, .ops-main { padding-left: 16px; padding-right: 16px; }
   .floor-head { flex-direction: column; }
